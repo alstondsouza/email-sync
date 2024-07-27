@@ -2,7 +2,7 @@ const axios = require('axios');
 const { indexEmails } = require('./elasticsearch');
 
 const OUTLOOK_CLIENT_ID = '35cbe9d1-4e3e-40e1-b10f-e92a721ddbba';
-const OUTLOOK_CLIENT_SECRET = 'd3de8fba-302f-4a15-ab44-321738ca12e5';
+const OUTLOOK_CLIENT_SECRET = '9lc8Q~du-lCydRV.5A3MDlNV4Gpcm2EIBkpsIbKx';
 const REDIRECT_URI = 'http://localhost:8000/callback/';
 
 function getOutlookAuthUrl() {
@@ -20,7 +20,6 @@ async function saveOutlookToken(code) {
     client_secret: OUTLOOK_CLIENT_SECRET
   };
   const response = await axios.post(tokenUrl, new URLSearchParams(data));
-  console.log(response);
   return response.data;
 }
 
@@ -30,7 +29,6 @@ async function syncOutlookEmails(token) {
     Accept: 'application/json'
   };
   const response = await axios.get('https://outlook.office.com/api/v2.0/me/messages', { headers });
-  console.log(response);
   const emails = response.data.value;
   await indexEmails(emails);
 }

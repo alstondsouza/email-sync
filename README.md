@@ -2,6 +2,9 @@
 
 ## Setup and Run
 
+docker compose up --build
+
+
 ### Prerequisites
 - Docker
 - Docker Compose
@@ -10,5 +13,5 @@
 
 1. Clone the repository:
    ```sh
-   git clone https://github.com/yourusername/email-client-core.git
-   cd email-client-core
+   git clone https://github.com/alstondsouza/email-sync.git
+   cd email-sync

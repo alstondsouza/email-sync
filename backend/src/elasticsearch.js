@@ -6,8 +6,8 @@ async function indexEmails(emails) {
   for (const email of emails) {
     await client.index({
       index: 'emails',
-      id: email.id,
-      body: email
+      id: email.Id,
+      document: email
     });
   }
 }
