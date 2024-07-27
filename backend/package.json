@@ -1,0 +1,16 @@
+{
+    "name": "email-client-backend",
+    "version": "1.0.0",
+    "description": "Backend for email client core system",
+    "main": "src/index.js",
+    "scripts": {
+        "start": "node src/index.js"
+    },
+    "dependencies": {
+        "@elastic/elasticsearch": "^8.14.0",
+        "axios": "^0.21.1",
+        "cors": "^2.8.5",
+        "elasticsearch": "^16.7.2",
+        "express": "^4.17.1"
+    }
+}
