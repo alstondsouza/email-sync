@@ -2,7 +2,7 @@ const axios = require('axios');
 const { indexEmails } = require('./elasticsearch');
 
 const OUTLOOK_CLIENT_ID = '35cbe9d1-4e3e-40e1-b10f-e92a721ddbba';
-const OUTLOOK_CLIENT_SECRET = '9lc8Q~du-lCydRV.5A3MDlNV4Gpcm2EIBkpsIbKx';
+// const OUTLOOK_CLIENT_SECRET = '9lc8Q~du-lCydRV.5A3MDlNV4Gpcm2EIBkpsIbKx';
 const REDIRECT_URI = 'http://localhost:8000/callback/';
 
 function getOutlookAuthUrl() {
