@@ -1,5 +1,6 @@
 const express = require('express');
 const { getOutlookAuthUrl, saveOutlookToken, syncOutlookEmails } = require('./oauth');
+const { fetchEmails } = require('./elasticsearch');
 
 const router = express.Router();
 
@@ -20,11 +21,24 @@ router.get('/callback', async (req, res) => {
     }
     const token = await saveOutlookToken(code);
     await syncOutlookEmails(token);
-    res.json({ message: 'Account linked and emails synced' });
+    // res.json({ message: 'Account linked and emails synced' });
+    res.redirect('http://localhost:3000');
   } catch (error) {
     console.log(error);
     res.status(500).json({ error: 'Error in callback' });
   }
 });
+
+// Route to fetch all emails using scroll API
+router.get('/emails', async (req, res) => {
+  try{
+    let emails = await fetchEmails();
+    res.json(emails);
+  } catch(error){
+    res.status(500).send('Error fetching emails');
+  }
+  
+});
+
 
 module.exports = router;
