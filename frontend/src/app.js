@@ -18,6 +18,12 @@ const App = () => {
     setEmails(response.data);
   };
 
+  const viewEmailContent = async (htmlContent) => {
+    const newWindow = window.open('', '_blank', 'width=800,height=600');
+    newWindow.document.write(htmlContent);
+    newWindow.document.close();
+  };
+
   return (
     <div>
       <button onClick={createAccount}>Link Outlook Account</button>
@@ -25,7 +31,25 @@ const App = () => {
       <button onClick={fetchEmails}>Fetch Emails</button>
       <ul>
         {emails.map(email => (
-          <li key={email.Id+"from"}>FROM: {email.From.EmailAddress.Address} - {email.From.EmailAddress.Name}</li>
+          <li key={email.Id}>
+            {email.IsRead ? "Read" : <b>Unread</b>}
+            <br /> - From: <br />
+            <a href={`mailto:${email.From.EmailAddress.Address}`}
+              target="_blank"
+              rel="noopener noreferrer">
+              {email.From.EmailAddress.Name}
+            </a>
+            <br /> - To: <br />
+            {email.ToRecipients.map(toEmail => (
+              <a href={`mailto:${toEmail.EmailAddress.Address}`}
+                target="_blank"
+                rel="noopener noreferrer">
+                {toEmail.EmailAddress.Name},&nbsp;
+              </a>
+            ))}
+            <br />Subject: {email.Subject} &nbsp;&nbsp;
+            <button onClick={() => viewEmailContent(email.Body.Content)} type="button">View Content</button>
+          </li>
         ))}
       </ul>
     </div>
