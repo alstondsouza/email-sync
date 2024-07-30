@@ -22,7 +22,7 @@ router.get('/callback', async (req, res) => {
     const token = await saveOutlookToken(code);
     await syncOutlookEmails(token);
     // res.json({ message: 'Account linked and emails synced' });
-    res.redirect('http://localhost:3000');
+    res.redirect('http://localhost:3000/emails?loggedIn=true');
   } catch (error) {
     console.log(error);
     res.status(500).json({ error: 'Error in callback' });
