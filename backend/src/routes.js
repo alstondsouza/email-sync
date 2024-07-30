@@ -1,13 +1,16 @@
 const express = require('express');
 const { getOutlookAuthUrl, saveOutlookToken, syncOutlookEmails } = require('./oauth');
-const { fetchEmails } = require('./elasticsearch');
+const { fetchEmails, updateUserToken } = require('./elasticsearch');
+const { createUserAccount } = require('./util');
 
 const router = express.Router();
 
 router.post('/create_account', async (req, res) => {
   try {
-    const outlookAuthUrl = getOutlookAuthUrl();
-    res.json({ auth_url: outlookAuthUrl });
+    const { name, email } = req.body;
+    const userId = await createUserAccount(name, email);
+    const outlookAuthUrl = getOutlookAuthUrl(userId);
+    res.json({ auth_url: outlookAuthUrl, userId: userId });
   } catch (error) {
     res.status(500).json({ error: 'Error creating account' });
   }
@@ -15,16 +18,20 @@ router.post('/create_account', async (req, res) => {
 
 router.get('/callback', async (req, res) => {
   try {
-    const code = req.query.code;
-    if (!code) {
-      return res.status(400).json({ error: 'Invalid callback request' });
+    // const code = req.query.code;
+    const { code, state: userId } = req.query;
+    if (!code || !userId) {
+      return res.status(400).send('Missing code or state');
     }
+    // if (!code) {
+    //   return res.status(400).json({ error: 'Invalid callback request' });
+    // }
     const token = await saveOutlookToken(code);
-    await syncOutlookEmails(token);
-    // res.json({ message: 'Account linked and emails synced' });
+    await updateUserToken(userId, token);
+    await syncOutlookEmails(userId, token);
     res.redirect('http://localhost:3000/emails?loggedIn=true');
   } catch (error) {
-    console.log(error);
+    console.log(error.body);
     res.status(500).json({ error: 'Error in callback' });
   }
 });
@@ -32,7 +39,8 @@ router.get('/callback', async (req, res) => {
 // Route to fetch all emails using scroll API
 router.get('/emails', async (req, res) => {
   try{
-    let emails = await fetchEmails();
+    const userId = req.query.userId;
+    let emails = await fetchEmails(userId);
     res.json(emails);
   } catch(error){
     res.status(500).send('Error fetching emails');

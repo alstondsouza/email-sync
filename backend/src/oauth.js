@@ -5,8 +5,8 @@ const OUTLOOK_CLIENT_ID = '35cbe9d1-4e3e-40e1-b10f-e92a721ddbba';
 const OUTLOOK_CLIENT_SECRET = '9lc8Q~du-lCydRV.5A3MDlNV4Gpcm2EIBkpsIbKx';
 const REDIRECT_URI = 'http://localhost:8000/callback/';
 
-function getOutlookAuthUrl() {
-  return `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${OUTLOOK_CLIENT_ID}&response_type=code&redirect_uri=${REDIRECT_URI}&response_mode=query&scope=openid%20email%20profile%20offline_access%20https://outlook.office.com/Mail.ReadWrite`;
+function getOutlookAuthUrl(userId) {
+  return `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${OUTLOOK_CLIENT_ID}&response_type=code&redirect_uri=${REDIRECT_URI}&response_mode=query&scope=openid%20email%20profile%20offline_access%20https://outlook.office.com/Mail.ReadWrite&state=${userId}`;
 }
 
 async function saveOutlookToken(code) {
@@ -23,14 +23,14 @@ async function saveOutlookToken(code) {
   return response.data;
 }
 
-async function syncOutlookEmails(token) {
+async function syncOutlookEmails(userId, token) {
   const headers = {
     Authorization: `Bearer ${token.access_token}`,
     Accept: 'application/json'
   };
   const response = await axios.get('https://outlook.office.com/api/v2.0/me/messages', { headers });
   const emails = response.data.value;
-  await indexEmails(emails);
+  await indexEmails(emails, userId);
 }
 
 module.exports = { getOutlookAuthUrl, saveOutlookToken, syncOutlookEmails };

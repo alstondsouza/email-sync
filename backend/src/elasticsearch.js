@@ -2,17 +2,18 @@ const { Client } = require('@elastic/elasticsearch');
 
 const client = new Client({ node: process.env.ELASTICSEARCH_HOST || 'http://localhost:9200' });
 
-(async () => {
-  try {
-    const health = await client.cluster.health();
-    console.log('Elasticsearch cluster health:', health);
-  } catch (err) {
-    console.error('Error connecting to Elasticsearch:', err);
-  }
-})();
+// (async () => {
+//   try {
+//     const health = await client.cluster.health();
+//     console.log('Elasticsearch cluster health:', health);
+//   } catch (err) {
+//     console.error('Error connecting to Elasticsearch:', err);
+//   }
+// })();
 
-async function indexEmails(emails) {
+async function indexEmails(emails, userId) {
   for (const email of emails) {
+    email.userId = userId;
     await client.index({
       index: 'emails',
       id: email.Id,
@@ -21,7 +22,7 @@ async function indexEmails(emails) {
   }
 }
 
-async function fetchEmails() {
+async function fetchEmails(userId) {
   try {
     let emails = [];
     const { body: initBody } = await client.search({
@@ -29,8 +30,9 @@ async function fetchEmails() {
         scroll: '1m',
         body: {
             query: {
-                match_all: {}
-            }
+              match: { userId }
+            },
+            sort: [{ CreatedDateTime: { order: 'desc' } }]
         }
     });
 
@@ -57,4 +59,26 @@ async function fetchEmails() {
 }
 }
 
-module.exports = { indexEmails, fetchEmails };
+async function indexUser(userId, name, email) {
+    await client.index({
+      index: 'users',
+      id: userId,
+      body: {
+        "email":email,
+        "name":name,
+        "userId":userId
+      }
+    });
+}
+
+async function updateUserToken(userId, token) {
+  await client.update({
+    index: 'users',
+    id: userId,
+    body: {
+      doc: {token}
+    }
+  });
+}
+
+module.exports = { indexEmails, fetchEmails, indexUser, updateUserToken };

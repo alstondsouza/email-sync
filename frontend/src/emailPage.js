@@ -4,18 +4,24 @@ import axios from 'axios';
 
 const EmailPage = () => {
     const [emails, setEmails] = useState([]);
+    const [userId, setUserId] = useState(null);
 
     const location = useLocation();
 
     useEffect(() => {
-        const queryParams = new URLSearchParams(location.search);
-        if (queryParams.get('loggedIn')) {
+        // const queryParams = new URLSearchParams(location.search);
+        const storedUserId = sessionStorage.getItem('userId');
+        setUserId(storedUserId);
+        // if (queryParams.get('loggedIn')) {
+        //     alert('You are now logged in!');
+        // }
+        if (storedUserId != null) {
             alert('You are now logged in!');
         }
     }, [location]);
 
     const fetchEmails = async () => {
-        const response = await axios.get('http://localhost:8000/emails');
+        const response = await axios.get('http://localhost:8000/emails?userId='+userId);
         console.log(response.data);
         setEmails(response.data);
     };
@@ -31,7 +37,7 @@ const EmailPage = () => {
             <button onClick={fetchEmails}>Fetch Emails</button>
             <ul>
                 {emails.map(email => (
-                    <li key={email.Id}>
+                    <li key={email.InternetMessageId}>
                         {email.IsRead ? "Read" : <b>Unread</b>}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                         Importance:{email.Importance}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                         Flag:{email.Flag.FlagStatus}
