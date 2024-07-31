@@ -1,5 +1,5 @@
 const express = require('express');
-const { getOutlookAuthUrl, saveOutlookToken, syncOutlookEmails, getOutlookSignedInUserDetails, getOutlookFolders } = require('./oauth');
+const { getOutlookAuthUrl, saveOutlookToken, syncOutlookEmails, getOutlookSignedInUserDetails, getOutlookFolders, subscribeOutlook } = require('./oauth');
 const { fetchEmails, updateUserToken, fetchFolders } = require('./elasticsearch');
 const { createUserAccount } = require('./util');
 
@@ -26,12 +26,13 @@ router.get('/callback', async (req, res) => {
     await updateUserToken(userId, token);
     const userDetails = await getOutlookSignedInUserDetails(userId, token);
     const folders = await getOutlookFolders(userId, token);
+    // const subscribed = await subscribeOutlook(userId, token);
     folders.map(async (folder) =>{
-      await syncOutlookEmails(userId, token, folder.Id);
+      await syncOutlookEmails(userId, token, folder.id);
     });
-    res.redirect('http://localhost:3000/emails?loggedIn=true&displayname='+userDetails.DisplayName);
+    res.redirect('http://localhost:3000/emails?loggedIn=true&displayname='+userDetails.displayName);
   } catch (error) {
-    console.log(error);
+    console.log(error.response.data);
     res.status(500).json({ error: 'Error in callback' });
   }
 });
@@ -49,5 +50,18 @@ router.get('/emails', async (req, res) => {
   
 });
 
+router.post('/api/notifications', async (req, res) => {
+  const { value } = req.body;
+  for (const notification of value) {
+    // Process each notification (e.g., fetch the updated email)
+    await handleNotification(notification);
+  }
+  res.status(202).send('Accepted');
+});
+
+async function handleNotification(notification) {
+  // Fetch the updated email data using notification.resource
+  console.log(notification);
+}
 
 module.exports = router;

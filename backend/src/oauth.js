@@ -5,15 +5,19 @@ const OUTLOOK_CLIENT_ID = '35cbe9d1-4e3e-40e1-b10f-e92a721ddbba';
 const OUTLOOK_CLIENT_SECRET = '9lc8Q~du-lCydRV.5A3MDlNV4Gpcm2EIBkpsIbKx';
 const REDIRECT_URI = 'http://localhost:8000/callback/';
 
+const scopes = 'User.Read Mail.Read Mail.ReadWrite';
+
 function getOutlookAuthUrl(userId) {
-  return `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${OUTLOOK_CLIENT_ID}&response_type=code&redirect_uri=${REDIRECT_URI}&response_mode=query&scope=openid%20email%20profile%20offline_access%20https://outlook.office.com/Mail.ReadWrite&state=${userId}`;
+  const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${OUTLOOK_CLIENT_ID}&response_type=code&redirect_uri=${REDIRECT_URI}&response_mode=query&scope=${encodeURIComponent(scopes)}&state=${userId}`;
+  return authUrl;
+  // return `         https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${OUTLOOK_CLIENT_ID}&response_type=code&redirect_uri=${REDIRECT_URI}&response_mode=query&scope=openid%20email%20profile%20offline_access%20https://graph.microsoft.com/Mail.ReadWrite&state=${userId}`;
 }
 
 async function saveOutlookToken(code) {
   const tokenUrl = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
   const data = {
     client_id: OUTLOOK_CLIENT_ID,
-    scope: 'https://outlook.office.com/Mail.ReadWrite',
+    scope: scopes,
     code: code,
     redirect_uri: REDIRECT_URI,
     grant_type: 'authorization_code',
@@ -24,7 +28,7 @@ async function saveOutlookToken(code) {
 }
 
 async function syncOutlookEmails(userId, token, folderId) {
-  let nextLink = `https://outlook.office.com/api/v2.0/me/mailfolders/${folderId}/messages`;
+  let nextLink = `https://graph.microsoft.com/v1.0/me/mailfolders/${folderId}/messages`;
   const emails = [];
   while (nextLink) {
     const response = await fetch(nextLink, {
@@ -35,7 +39,7 @@ async function syncOutlookEmails(userId, token, folderId) {
       }
     });
 
-    if (response.ok) {
+    if (response.status === 200) {
       const data = await response.json();
       emails.push(...data.value);
       nextLink = data['@odata.nextLink']; // Next page link
@@ -55,7 +59,7 @@ async function getOutlookSignedInUserDetails(userId, token) {
     Authorization: `Bearer ${token.access_token}`,
     Accept: 'application/json'
   };
-  const response = await axios.get('https://outlook.office.com/api/v2.0/me', { headers });
+  const response = await axios.get('https://graph.microsoft.com/v1.0/me', { headers });
   const userDetails = response.data;
   await updateUserDetails(userId, userDetails);
   return userDetails;
@@ -66,10 +70,27 @@ async function getOutlookFolders(userId, token) {
     Authorization: `Bearer ${token.access_token}`,
     Accept: 'application/json'
   };
-  const response = await axios.get('https://outlook.office.com/api/v2.0/me/mailfolders', { headers });
+  const response = await axios.get('https://graph.microsoft.com/v1.0/me/mailfolders', { headers });
   const folderInfo = response.data.value;
   await updateFolderDetails(userId, folderInfo);
   return folderInfo;
+}
+
+async function subscribeOutlook(userId, token){
+  const notifUrl = `https://graph.microsoft.com/v1.0/subscriptions`
+  const headers = {
+    Authorization: `Bearer ${token.access_token}`,
+    Accept: 'application/json'
+  };
+  const data={
+    "changeType": "created,updated,deleted",
+    "notificationUrl": "http://localhost:8000/api/notifications",
+    "resource": "/me/mailFolders('inbox')/messages",
+    "expirationDateTime":"2024-08-01T18:23:45.9356913Z",
+    "clientState": "emailSyncCoreApp"
+  }
+  const response = await axios.post(notifUrl, { headers: headers }, data);
+  console.log("Subscribed", response);
 }
 
 module.exports = {
@@ -77,5 +98,6 @@ module.exports = {
   saveOutlookToken,
   syncOutlookEmails,
   getOutlookSignedInUserDetails,
-  getOutlookFolders
+  getOutlookFolders,
+  subscribeOutlook
 };

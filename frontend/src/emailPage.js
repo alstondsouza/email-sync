@@ -40,26 +40,26 @@ const EmailPage = () => {
             <h1>Welcome {displayname}</h1>
             <ul>
                 {folders.map(folder => (
-                    <li key={folder.Id}>
-                        {folder.DisplayName} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                        No. of mails: {folder.TotalItemCount} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                        No. of unread mails:{folder.UnreadItemCount}
+                    <li key={folder.id}>
+                        {folder.displayName} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        No. of mails: {folder.totalItemCount} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        No. of unread mails:{folder.unreadItemCount}
                         <hr /><hr />
                         <ul>
                             {emails.map(email => {
-                                if (email.folderId === folder.Id) {
+                                if (email.folderId === folder.id) {
                                     return (
-                                        <li key={email.InternetMessageId}>
-                                            {email.IsRead ? "Read" : <b>Unread</b>}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                                            Importance:{email.Importance}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                                            Flag:{email.Flag.FlagStatus}
-                                            {email.From ?
+                                        <li key={email.id}>
+                                            {email.isRead ? "Read" : <b>Unread</b>}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                            Importance:{email.importance}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                            Flag:{email.flag.flagStatus}
+                                            {email.from ?
                                                 <div>
                                                     <br /> - From: <br />
-                                                    <a href={`mailto:${email.From.EmailAddress.Address}`}
+                                                    <a href={`mailto:${email.from.emailAddress.address}`}
                                                         target="_blank"
                                                         rel="noopener noreferrer">
-                                                        {email.From.EmailAddress.Name}
+                                                        {email.from.emailAddress.name}
                                                     </a>
                                                 </div>
                                                 :
@@ -67,15 +67,15 @@ const EmailPage = () => {
 
                                                 </div>}
                                             <br /> - To: <br />
-                                            {email.ToRecipients.map(toEmail => (
-                                                <a href={`mailto:${toEmail.EmailAddress.Address}`}
+                                            {email.toRecipients.map(toEmail => (
+                                                <a href={`mailto:${toEmail.emailAddress.address}`}
                                                     target="_blank"
                                                     rel="noopener noreferrer">
-                                                    {toEmail.EmailAddress.Name},&nbsp;
+                                                    {toEmail.emailAddress.name},&nbsp;
                                                 </a>
                                             ))}
-                                            <br />Subject: {email.Subject} &nbsp;&nbsp;
-                                            <button onClick={() => viewEmailContent(email.Body.Content)} type="button">View Content</button>
+                                            <br />Subject: {email.subject} &nbsp;&nbsp;
+                                            <button onClick={() => viewEmailContent(email.body.content)} type="button">View Content</button>
                                             <hr />
                                         </li>
                                     );

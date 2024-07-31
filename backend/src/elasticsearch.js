@@ -17,7 +17,7 @@ async function indexEmails(emails, userId, folderId) {
     email.folderId = folderId;
     await client.index({
       index: 'emails',
-      id: email.Id,
+      id: email.id,
       body: email
     });
   }
@@ -97,7 +97,7 @@ async function updateFolderDetails(userId, folderInfo) {
     folder.userId = userId;
     await client.index({
       index: 'folders',
-      id: folder.Id,
+      id: folder.id,
       body: folder
     });
   }
