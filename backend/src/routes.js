@@ -1,6 +1,6 @@
 const express = require('express');
-const { getOutlookAuthUrl, saveOutlookToken, syncOutlookEmails } = require('./oauth');
-const { fetchEmails, updateUserToken } = require('./elasticsearch');
+const { getOutlookAuthUrl, saveOutlookToken, syncOutlookEmails, getOutlookSignedInUserDetails, getOutlookFolders } = require('./oauth');
+const { fetchEmails, updateUserToken, fetchFolders } = require('./elasticsearch');
 const { createUserAccount } = require('./util');
 
 const router = express.Router();
@@ -18,20 +18,20 @@ router.post('/create_account', async (req, res) => {
 
 router.get('/callback', async (req, res) => {
   try {
-    // const code = req.query.code;
     const { code, state: userId } = req.query;
     if (!code || !userId) {
       return res.status(400).send('Missing code or state');
     }
-    // if (!code) {
-    //   return res.status(400).json({ error: 'Invalid callback request' });
-    // }
     const token = await saveOutlookToken(code);
     await updateUserToken(userId, token);
-    await syncOutlookEmails(userId, token);
-    res.redirect('http://localhost:3000/emails?loggedIn=true');
+    const userDetails = await getOutlookSignedInUserDetails(userId, token);
+    const folders = await getOutlookFolders(userId, token);
+    folders.map(async (folder) =>{
+      await syncOutlookEmails(userId, token, folder.Id);
+    });
+    res.redirect('http://localhost:3000/emails?loggedIn=true&displayname='+userDetails.DisplayName);
   } catch (error) {
-    console.log(error.body);
+    console.log(error);
     res.status(500).json({ error: 'Error in callback' });
   }
 });
@@ -41,7 +41,8 @@ router.get('/emails', async (req, res) => {
   try{
     const userId = req.query.userId;
     let emails = await fetchEmails(userId);
-    res.json(emails);
+    let folders = await fetchFolders(userId);
+    res.json({emails, folders});
   } catch(error){
     res.status(500).send('Error fetching emails');
   }

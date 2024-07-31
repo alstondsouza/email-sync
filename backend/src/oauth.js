@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { indexEmails } = require('./elasticsearch');
+const { indexEmails, updateUserDetails, updateFolderDetails } = require('./elasticsearch');
 
 const OUTLOOK_CLIENT_ID = '35cbe9d1-4e3e-40e1-b10f-e92a721ddbba';
 const OUTLOOK_CLIENT_SECRET = '9lc8Q~du-lCydRV.5A3MDlNV4Gpcm2EIBkpsIbKx';
@@ -23,14 +23,59 @@ async function saveOutlookToken(code) {
   return response.data;
 }
 
-async function syncOutlookEmails(userId, token) {
+async function syncOutlookEmails(userId, token, folderId) {
+  let nextLink = `https://outlook.office.com/api/v2.0/me/mailfolders/${folderId}/messages`;
+  const emails = [];
+  while (nextLink) {
+    const response = await fetch(nextLink, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token.access_token}`,
+        'Accept': 'application/json'
+      }
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      emails.push(...data.value);
+      nextLink = data['@odata.nextLink']; // Next page link
+    } else if (response.status === 429) {
+      // Handle rate limiting as discussed
+      const retryAfter = response.headers.get('Retry-After') || 1;
+      await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+    } else {
+      throw new Error('Failed to fetch emails');
+    }
+  }
+  await indexEmails(emails, userId, folderId);
+}
+
+async function getOutlookSignedInUserDetails(userId, token) {
   const headers = {
     Authorization: `Bearer ${token.access_token}`,
     Accept: 'application/json'
   };
-  const response = await axios.get('https://outlook.office.com/api/v2.0/me/messages', { headers });
-  const emails = response.data.value;
-  await indexEmails(emails, userId);
+  const response = await axios.get('https://outlook.office.com/api/v2.0/me', { headers });
+  const userDetails = response.data;
+  await updateUserDetails(userId, userDetails);
+  return userDetails;
 }
 
-module.exports = { getOutlookAuthUrl, saveOutlookToken, syncOutlookEmails };
+async function getOutlookFolders(userId, token) {
+  const headers = {
+    Authorization: `Bearer ${token.access_token}`,
+    Accept: 'application/json'
+  };
+  const response = await axios.get('https://outlook.office.com/api/v2.0/me/mailfolders', { headers });
+  const folderInfo = response.data.value;
+  await updateFolderDetails(userId, folderInfo);
+  return folderInfo;
+}
+
+module.exports = {
+  getOutlookAuthUrl,
+  saveOutlookToken,
+  syncOutlookEmails,
+  getOutlookSignedInUserDetails,
+  getOutlookFolders
+};

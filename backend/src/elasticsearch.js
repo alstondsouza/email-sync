@@ -11,9 +11,10 @@ const client = new Client({ node: process.env.ELASTICSEARCH_HOST || 'http://loca
 //   }
 // })();
 
-async function indexEmails(emails, userId) {
+async function indexEmails(emails, userId, folderId) {
   for (const email of emails) {
     email.userId = userId;
+    email.folderId = folderId;
     await client.index({
       index: 'emails',
       id: email.Id,
@@ -81,4 +82,69 @@ async function updateUserToken(userId, token) {
   });
 }
 
-module.exports = { indexEmails, fetchEmails, indexUser, updateUserToken };
+async function updateUserDetails(userId, userDetails) {
+  await client.update({
+    index: 'users',
+    id: userId,
+    body: {
+      doc: {userDetails}
+    }
+  });
+}
+
+async function updateFolderDetails(userId, folderInfo) {
+  for (const folder of folderInfo) {
+    folder.userId = userId;
+    await client.index({
+      index: 'folders',
+      id: folder.Id,
+      body: folder
+    });
+  }
+}
+
+async function fetchFolders(userId) {
+  try {
+    let folders = [];
+    const { body: initBody } = await client.search({
+        index: 'folders',
+        scroll: '1m',
+        body: {
+            query: {
+              match: { userId }
+            }
+        }
+    });
+
+    folders = folders.concat(initBody.hits.hits.map(hit => hit._source));
+
+    let scrollId = initBody._scroll_id;
+    let fetchedFolders = initBody.hits.hits.length;
+
+    while (fetchedFolders > 0) {
+        const { body: scrollBody } = await client.scroll({
+            scroll_id: scrollId,
+            scroll: '1m'
+        });
+
+        folders = folders.concat(scrollBody.hits.hits.map(hit => hit._source));
+        scrollId = scrollBody._scroll_id;
+        fetchedFolders = scrollBody.hits.hits.length;
+    }
+
+    return folders;
+
+} catch (err) {
+    console.error('Error fetching folders:', err);
+}
+}
+
+module.exports = { 
+  indexEmails, 
+  fetchEmails, 
+  indexUser, 
+  updateUserToken, 
+  updateUserDetails,
+  updateFolderDetails,
+  fetchFolders
+};
