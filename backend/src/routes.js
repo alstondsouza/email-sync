@@ -1,5 +1,11 @@
 const express = require('express');
-const { getOutlookAuthUrl, saveOutlookToken, syncOutlookEmails, getOutlookSignedInUserDetails, getOutlookFolders, subscribeOutlook } = require('./oauth');
+const { getOutlookAuthUrl, 
+  saveOutlookToken, 
+  syncOutlookEmails, 
+  getOutlookSignedInUserDetails, 
+  getOutlookFolders, 
+  subscribeOutlook,
+  handleNotification } = require('./oauth');
 const { fetchEmails, updateUserToken, fetchFolders } = require('./elasticsearch');
 const { createUserAccount } = require('./util');
 
@@ -26,11 +32,11 @@ router.get('/callback', async (req, res) => {
     await updateUserToken(userId, token);
     const userDetails = await getOutlookSignedInUserDetails(userId, token);
     const folders = await getOutlookFolders(userId, token);
-    // const subscribed = await subscribeOutlook(userId, token);
-    folders.map(async (folder) =>{
+    folders.map(async (folder) => {
       await syncOutlookEmails(userId, token, folder.id);
     });
-    res.redirect('http://localhost:3000/emails?loggedIn=true&displayname='+userDetails.displayName);
+    await subscribeOutlook(userId, token);
+    res.redirect('http://localhost:3000/emails?loggedIn=true&displayname=' + userDetails.displayName);
   } catch (error) {
     console.log(error.response.data);
     res.status(500).json({ error: 'Error in callback' });
@@ -39,29 +45,46 @@ router.get('/callback', async (req, res) => {
 
 // Route to fetch all emails using scroll API
 router.get('/emails', async (req, res) => {
-  try{
+  try {
     const userId = req.query.userId;
     let emails = await fetchEmails(userId);
     let folders = await fetchFolders(userId);
-    res.json({emails, folders});
-  } catch(error){
+    res.json({ emails, folders });
+  } catch (error) {
     res.status(500).send('Error fetching emails');
   }
-  
+
 });
 
+// router.get('/subscribe', async (req, res) => {
+//   try {
+//     const userId = req.query.userId;
+//     const token = await fetchToken(userId);
+//     const subscribed = await subscribeOutlook(userId, token);
+//     res.json({ 
+//       "subscribe": "success",
+//       subscribed
+//     });
+//   } catch (error) {
+//     res.status(500).send('Error subscribing');
+//   }
+
+// });
+// 
 router.post('/api/notifications', async (req, res) => {
   const { value } = req.body;
-  for (const notification of value) {
-    // Process each notification (e.g., fetch the updated email)
-    await handleNotification(notification);
+  if (value) {
+    for (const notification of value) {
+      // Process each notification (e.g., fetch the updated email)
+      await handleNotification(notification);
+    }
+    res.status(200).send('OK');
   }
-  res.status(202).send('Accepted');
+  else {
+    const validationToken = req.query.validationToken;
+    res.status(200).send(validationToken);
+  }
+  // res.status(202).send('Accepted');
 });
-
-async function handleNotification(notification) {
-  // Fetch the updated email data using notification.resource
-  console.log(notification);
-}
 
 module.exports = router;

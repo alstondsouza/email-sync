@@ -26,6 +26,8 @@ const EmailPage = () => {
         console.log(response.data);
         setEmails(response.data.emails);
         setfolders(response.data.folders);
+        // const subscribe = await axios.get('http://localhost:8000/subscribe?userId=' + userId);
+        // console.log(subscribe);
     };
 
     const viewEmailContent = async (htmlContent) => {
@@ -36,7 +38,7 @@ const EmailPage = () => {
 
     return (
         <div>
-            <button onClick={fetchEmails}>Fetch Emails</button>
+            <button onClick={fetchEmails}>Fetch/Refresh Emails</button>
             <h1>Welcome {displayname}</h1>
             <ul>
                 {folders.map(folder => (

@@ -1,5 +1,11 @@
 const axios = require('axios');
-const { indexEmails, updateUserDetails, updateFolderDetails } = require('./elasticsearch');
+const {
+  indexEmails,
+  updateUserDetails,
+  updateFolderDetails,
+  fetchToken,
+  updateEmails,
+  deleteEmails } = require('./elasticsearch');
 
 const OUTLOOK_CLIENT_ID = '35cbe9d1-4e3e-40e1-b10f-e92a721ddbba';
 const OUTLOOK_CLIENT_SECRET = '9lc8Q~du-lCydRV.5A3MDlNV4Gpcm2EIBkpsIbKx';
@@ -76,21 +82,53 @@ async function getOutlookFolders(userId, token) {
   return folderInfo;
 }
 
-async function subscribeOutlook(userId, token){
+async function subscribeOutlook(userId, token) {
   const notifUrl = `https://graph.microsoft.com/v1.0/subscriptions`
   const headers = {
     Authorization: `Bearer ${token.access_token}`,
     Accept: 'application/json'
   };
-  const data={
+  const data = {
     "changeType": "created,updated,deleted",
-    "notificationUrl": "http://localhost:8000/api/notifications",
-    "resource": "/me/mailFolders('inbox')/messages",
-    "expirationDateTime":"2024-08-01T18:23:45.9356913Z",
-    "clientState": "emailSyncCoreApp"
+    "notificationUrl": "https://6b15-103-130-108-166.ngrok-free.app/api/notifications",
+    "resource": "/me/messages",
+    "expirationDateTime": "2024-08-02T18:23:45.9356913Z",
+    "clientState": userId
   }
-  const response = await axios.post(notifUrl, { headers: headers }, data);
-  console.log("Subscribed", response);
+  const response = await axios.post(notifUrl, data, { headers });
+  // console.log("Subscribed", response.data);
+}
+
+async function handleNotification(notification) {
+  const userId = notification.clientState;
+  const token = await fetchToken(userId);
+  try {
+    // Update your application with the new message details
+    if (notification.changeType == 'created' || notification.changeType == 'updated') {
+      const response = await axios.get(
+        `https://graph.microsoft.com/v1.0/${notification.resource}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token.access_token}`
+          }
+        }
+      );
+      const messageDetails = response.data;
+      await updateEmails(userId, messageDetails);
+    }
+    else if (notification.changeType == 'deleted') {
+      try {
+        await deleteEmails(notification);
+      } catch (error) {
+        console.log("delete error", error);
+      }
+    }
+    else {
+      console.log("No matching changeType")
+    }
+  } catch (error) {
+    // console.error('Error fetching resource details:', error);
+  }
 }
 
 module.exports = {
@@ -99,5 +137,6 @@ module.exports = {
   syncOutlookEmails,
   getOutlookSignedInUserDetails,
   getOutlookFolders,
-  subscribeOutlook
+  subscribeOutlook,
+  handleNotification
 };
