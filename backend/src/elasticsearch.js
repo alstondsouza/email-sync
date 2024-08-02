@@ -11,6 +11,24 @@ const client = new Client({ node: process.env.ELASTICSEARCH_HOST || 'http://loca
 //   }
 // })();
 
+async function createIndex(indexName) {
+  try {
+    const { body: exists } = await client.indices.exists({ index: indexName });
+
+    if (!exists) {
+      // Create the index if it doesn't exist
+      await client.indices.create({
+        index: indexName,
+      });
+      console.log(`Index ${indexName} created successfully.`);
+    } else {
+      console.log(`Index ${indexName} already exists.`);
+    }
+  } catch (error) {
+    console.error('Error creating index:', error);
+  }
+}
+
 async function indexEmails(emails, userId, folderId) {
   for (const email of emails) {
     email.userId = userId;
@@ -33,7 +51,7 @@ async function fetchEmails(userId) {
         query: {
           match: { userId }
         },
-        sort: [{ CreatedDateTime: { order: 'desc' } }]
+        sort: [{ createdDateTime: { order: 'desc' } }]
       }
     });
 
@@ -56,7 +74,7 @@ async function fetchEmails(userId) {
     return emails;
 
   } catch (err) {
-    console.error('Error fetching emails:', err);
+    console.error('Error fetching emails:', err.meta.body.error.root_cause);
   }
 }
 
@@ -104,12 +122,10 @@ async function updateEmails(userId, emailDetails) {
 
 async function deleteEmails(emailDetails) {
   const emailId = emailDetails.resourceData.id;
-  console.log("email to delete",emailDetails.resourceData.id);
   const response = await client.delete({
     index: 'emails',
     id: emailId
   });
-  console.log('Document deleted:', response);
 }
 
 async function updateFolderDetails(userId, folderInfo) {
@@ -160,6 +176,7 @@ async function fetchFolders(userId) {
 }
 
 async function fetchToken(userId) {
+  await createIndex('users');
   const { body } = await client.search({
     index: 'users',
     body: {
@@ -177,6 +194,25 @@ async function fetchToken(userId) {
   }
 }
 
+async function fetchLocalUserId(name, email) {
+  await createIndex('users');
+  const { body } = await client.search({
+    index: 'users',
+    body: {
+      query: {
+        match: { email }
+      }
+    }
+  });
+  if (body.hits.total.value > 0) {
+    const userDocument = body.hits.hits[0]._source;
+    return userDocument.userId;
+  } else {
+    console.log('No document found with the given userId.');
+    return null;
+  }
+}
+
 module.exports = {
   indexEmails,
   fetchEmails,
@@ -187,5 +223,6 @@ module.exports = {
   fetchFolders,
   fetchToken,
   updateEmails,
-  deleteEmails
+  deleteEmails,
+  fetchLocalUserId
 };

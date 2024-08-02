@@ -1,9 +1,9 @@
 const express = require('express');
-const { getOutlookAuthUrl, 
-  saveOutlookToken, 
-  syncOutlookEmails, 
-  getOutlookSignedInUserDetails, 
-  getOutlookFolders, 
+const { getOutlookAuthUrl,
+  saveOutlookToken,
+  syncOutlookEmails,
+  getOutlookSignedInUserDetails,
+  getOutlookFolders,
   subscribeOutlook,
   handleNotification } = require('./oauth');
 const { fetchEmails, updateUserToken, fetchFolders } = require('./elasticsearch');
@@ -18,6 +18,7 @@ router.post('/create_account', async (req, res) => {
     const outlookAuthUrl = getOutlookAuthUrl(userId);
     res.json({ auth_url: outlookAuthUrl, userId: userId });
   } catch (error) {
+    console.log(error);
     res.status(500).json({ error: 'Error creating account' });
   }
 });
@@ -53,7 +54,6 @@ router.get('/emails', async (req, res) => {
   } catch (error) {
     res.status(500).send('Error fetching emails');
   }
-
 });
 
 // router.get('/subscribe', async (req, res) => {
@@ -85,6 +85,16 @@ router.post('/api/notifications', async (req, res) => {
     res.status(200).send(validationToken);
   }
   // res.status(202).send('Accepted');
+});
+
+router.get('/logout', async (req, res) => {
+  try {
+    const userId = req.query.userId;
+    await updateUserToken(userId, { token: {} });
+    res.json({ "logout": "success" });
+  } catch (error) {
+    res.status(500).send('Error logging out');
+  }
 });
 
 module.exports = router;

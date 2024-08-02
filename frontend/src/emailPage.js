@@ -19,6 +19,10 @@ const EmailPage = () => {
         if (storedUserId != null) {
             alert('You are now logged in!');
         }
+        else{
+            alert("Please login");
+            window.location.href = '/';
+        }
     }, [location]);
 
     const fetchEmails = async () => {
@@ -26,6 +30,20 @@ const EmailPage = () => {
         console.log(response.data);
         setEmails(response.data.emails);
         setfolders(response.data.folders);
+        // const subscribe = await axios.get('http://localhost:8000/subscribe?userId=' + userId);
+        // console.log(subscribe);
+    };
+
+    const logout = async () => {
+        const response = await axios.get('http://localhost:8000/logout?userId=' + userId);
+        console.log(response.data);
+        setEmails([]);
+        setfolders([]);
+        setDisplayName(null);
+        setUserId(null);
+        sessionStorage.removeItem('userId');
+        sessionStorage.clear();
+        window.location.href = '/';
         // const subscribe = await axios.get('http://localhost:8000/subscribe?userId=' + userId);
         // console.log(subscribe);
     };
@@ -39,6 +57,7 @@ const EmailPage = () => {
     return (
         <div>
             <button onClick={fetchEmails}>Fetch/Refresh Emails</button>
+            <button onClick={logout}>Logout</button>
             <h1>Welcome {displayname}</h1>
             <ul>
                 {folders.map(folder => (

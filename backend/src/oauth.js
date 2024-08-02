@@ -90,7 +90,7 @@ async function subscribeOutlook(userId, token) {
   };
   const data = {
     "changeType": "created,updated,deleted",
-    "notificationUrl": "https://6b15-103-130-108-166.ngrok-free.app/api/notifications",
+    "notificationUrl": "https://847f-103-130-108-164.ngrok-free.app/api/notifications",
     "resource": "/me/messages",
     "expirationDateTime": "2024-08-02T18:23:45.9356913Z",
     "clientState": userId
@@ -104,30 +104,34 @@ async function handleNotification(notification) {
   const token = await fetchToken(userId);
   try {
     // Update your application with the new message details
-    if (notification.changeType == 'created' || notification.changeType == 'updated') {
-      const response = await axios.get(
-        `https://graph.microsoft.com/v1.0/${notification.resource}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token.access_token}`
+    if (!notification.resource.includes("mailFolders")) {
+      if (notification.changeType == 'created' || notification.changeType == 'updated') {
+        const response = await axios.get(
+          `https://graph.microsoft.com/v1.0/${notification.resource}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token.access_token}`
+            }
           }
+        );
+        const messageDetails = response.data;
+        await updateEmails(userId, messageDetails);
+      }
+      else if (notification.changeType == 'deleted') {
+        try {
+          await deleteEmails(notification);
+        } catch (error) {
+          console.log("delete error", error);
         }
-      );
-      const messageDetails = response.data;
-      await updateEmails(userId, messageDetails);
-    }
-    else if (notification.changeType == 'deleted') {
-      try {
-        await deleteEmails(notification);
-      } catch (error) {
-        console.log("delete error", error);
+      }
+      else {
+        console.log("No matching changeType");
       }
     }
-    else {
-      console.log("No matching changeType")
-    }
+    await getOutlookFolders(userId, token);
   } catch (error) {
     // console.error('Error fetching resource details:', error);
+    console.log("error in handling notifications");
   }
 }
 
