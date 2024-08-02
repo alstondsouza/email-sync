@@ -19,11 +19,38 @@ const EmailPage = () => {
         if (storedUserId != null) {
             alert('You are now logged in!');
         }
-        else{
+        else {
             alert("Please login");
             window.location.href = '/';
         }
     }, [location]);
+
+    useEffect(() =>{
+        const ws = new WebSocket('ws://localhost:8000');
+
+        ws.onopen = () => {
+            console.log('Connected to WebSocket server');
+        };
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            console.log(data);
+            const storedUserId = sessionStorage.getItem('userId');
+            if(data.userId === storedUserId){
+                // setEmails(prevEmails => [...prevEmails, newEmail]);
+                setEmails(data.emails);
+                setfolders(data.folders);
+            }
+        };
+
+        ws.onclose = () => {
+            console.log('Disconnected from WebSocket server');
+        };
+
+        return () => {
+            ws.close();
+        };
+    }, []);
 
     const fetchEmails = async () => {
         const response = await axios.get('http://localhost:8000/emails?userId=' + userId);

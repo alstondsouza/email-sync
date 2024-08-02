@@ -20,9 +20,9 @@ async function createIndex(indexName) {
       await client.indices.create({
         index: indexName,
       });
-      console.log(`Index ${indexName} created successfully.`);
+      // console.log(`Index ${indexName} created successfully.`);
     } else {
-      console.log(`Index ${indexName} already exists.`);
+      // console.log(`Index ${indexName} already exists.`);
     }
   } catch (error) {
     console.error('Error creating index:', error);

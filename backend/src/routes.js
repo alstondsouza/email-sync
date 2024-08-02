@@ -8,6 +8,7 @@ const { getOutlookAuthUrl,
   handleNotification } = require('./oauth');
 const { fetchEmails, updateUserToken, fetchFolders } = require('./elasticsearch');
 const { createUserAccount } = require('./util');
+const { broadcastMessage } = require('./wsServer');
 
 const router = express.Router();
 
@@ -72,19 +73,27 @@ router.get('/emails', async (req, res) => {
 // });
 // 
 router.post('/api/notifications', async (req, res) => {
-  const { value } = req.body;
-  if (value) {
-    for (const notification of value) {
-      // Process each notification (e.g., fetch the updated email)
-      await handleNotification(notification);
+  try {
+    const { value } = req.body;
+    if (value) {
+      for (const notification of value) {
+        // Process each notification (e.g., fetch the updated email)
+        await handleNotification(notification);
+        const userId = notification.clientState;
+        const emails = await fetchEmails(userId);
+        const folders = await fetchFolders(userId);
+        broadcastMessage({ userId, emails, folders });
+      }
+      res.status(200).send('OK');
     }
-    res.status(200).send('OK');
+    else {
+      const validationToken = req.query.validationToken;
+      res.status(200).send(validationToken);
+    }
+    // res.status(202).send('Accepted');
+  } catch (error) {
+    console.log(error);
   }
-  else {
-    const validationToken = req.query.validationToken;
-    res.status(200).send(validationToken);
-  }
-  // res.status(202).send('Accepted');
 });
 
 router.get('/logout', async (req, res) => {

@@ -90,13 +90,13 @@ async function subscribeOutlook(userId, token) {
   };
   const data = {
     "changeType": "created,updated,deleted",
-    "notificationUrl": "https://847f-103-130-108-164.ngrok-free.app/api/notifications",
+    "notificationUrl": "https://9f5a-103-130-108-165.ngrok-free.app/api/notifications",
     "resource": "/me/messages",
-    "expirationDateTime": "2024-08-02T18:23:45.9356913Z",
+    "expirationDateTime": "2024-08-03T18:23:45.9356913Z",
     "clientState": userId
   }
   const response = await axios.post(notifUrl, data, { headers });
-  // console.log("Subscribed", response.data);
+  console.log("Subscribed", response.data);
 }
 
 async function handleNotification(notification) {
