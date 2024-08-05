@@ -90,7 +90,7 @@ async function subscribeOutlook(userId, token) {
   };
   const data = {
     "changeType": "created,updated,deleted",
-    "notificationUrl": "https://9f5a-103-130-108-165.ngrok-free.app/api/notifications",
+    "notificationUrl": "https://206c-103-130-108-165.ngrok-free.app/api/notifications",
     "resource": "/me/messages",
     "expirationDateTime": "2024-08-03T18:23:45.9356913Z",
     "clientState": userId
@@ -135,6 +135,17 @@ async function handleNotification(notification) {
   }
 }
 
+// async function unSubscribe(userId) {
+//   const token = await fetchToken(userId);
+//   const headers = {
+//     Authorization: `Bearer ${token.access_token}`,
+//     Accept: 'application/json'
+//   };
+//   const response = await axios.delete('https://graph.microsoft.com/v1.0/subscriptions', { headers });
+//   const unsub = response.data;
+//   return unsub;
+// }
+
 module.exports = {
   getOutlookAuthUrl,
   saveOutlookToken,
@@ -142,5 +153,6 @@ module.exports = {
   getOutlookSignedInUserDetails,
   getOutlookFolders,
   subscribeOutlook,
-  handleNotification
+  handleNotification,
+  unSubscribe
 };

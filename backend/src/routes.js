@@ -5,7 +5,8 @@ const { getOutlookAuthUrl,
   getOutlookSignedInUserDetails,
   getOutlookFolders,
   subscribeOutlook,
-  handleNotification } = require('./oauth');
+  handleNotification,
+  unSubscribe } = require('./oauth');
 const { fetchEmails, updateUserToken, fetchFolders } = require('./elasticsearch');
 const { createUserAccount } = require('./util');
 const { broadcastMessage } = require('./wsServer');
@@ -99,9 +100,11 @@ router.post('/api/notifications', async (req, res) => {
 router.get('/logout', async (req, res) => {
   try {
     const userId = req.query.userId;
+    // await unSubscribe(userId);
     await updateUserToken(userId, { token: {} });
     res.json({ "logout": "success" });
   } catch (error) {
+    console.log(error.response);
     res.status(500).send('Error logging out');
   }
 });
