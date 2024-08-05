@@ -1,0 +1,45 @@
+# version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_OPTIONS=--openssl-legacy-provider
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    depends_on:
+      - elasticsearch
+    networks:
+      - email-sync_es-net
+    environment:
+      - NODE_OPTIONS=--openssl-legacy-provider
+      - ELASTICSEARCH_HOST=http://elasticsearch:9200/
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.3
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - cluster.name=elasticsearch
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    networks:
+      - email-sync_es-net
+volumes:
+  esdata:
+    driver: local
+
+networks:
+  email-sync_es-net:
+    driver: bridge
